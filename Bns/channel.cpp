@@ -12,7 +12,7 @@ bns::Channel::~Channel()
 
 BNS_ERR_CODE bns::Channel::init(const BnsPoint& local)
 {
-    PRINTFLOG("this channel no support :init");
+    PRINTFLOG(BL_DEBUG,"this channel no support :init");
     return BNS_ERR_CODE::BNS_NO_SUPPORT;
 }
 
@@ -42,19 +42,19 @@ BNS_ERR_CODE bns::Channel::set_recv_buff_size(size_t recv_buff_size)
 
 BNS_ERR_CODE bns::Channel::active(const BnsPoint& remote)
 {
-    PRINTFLOG("this channel no support :active");
+    PRINTFLOG(BL_DEBUG,"this channel no support :active");
     return BNS_ERR_CODE::BNS_NO_SUPPORT;
 }
 
 BNS_ERR_CODE bns::Channel::send(std::shared_ptr<void> message, size_t message_size)
 {
-    PRINTFLOG("this channel no support :send");
+    PRINTFLOG(BL_DEBUG, "this channel no support :send");
     return BNS_ERR_CODE::BNS_NO_SUPPORT;
 }
 
 BNS_ERR_CODE bns::Channel::close()
 {
-    PRINTFLOG("this channel no support :close");
+    PRINTFLOG(BL_DEBUG, "this channel no support :close");
     return BNS_ERR_CODE::BNS_NO_SUPPORT;
 }
 

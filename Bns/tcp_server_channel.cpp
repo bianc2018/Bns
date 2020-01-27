@@ -8,6 +8,7 @@ BNS_ERR_CODE bns::TcpServerChannel::async_one_accept()
 
     if (nullptr == cli)
     {
+        PRINTFLOG(BL_DEBUG, "make_shared client error");
         EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_ACCEPT, BNS_ERR_CODE::BNS_ALLOC_FAIL);
         return BNS_ERR_CODE::BNS_ALLOC_FAIL;
     }
@@ -15,7 +16,9 @@ BNS_ERR_CODE bns::TcpServerChannel::async_one_accept()
     cli->init(BNS_INVALID_POINT);
     cli->set_shared_cb(make_shared_);
     cli->set_log_cb(log_cb_);
-    //cli->
+    
+    PRINTFLOG(BL_DEBUG, "%I64d accept one clent ", handle_);
+
     //异步接收连接
     auto self = shared_from_this();
     acceptor_.async_accept(cli->get_socket(), [this, self, cli]\
@@ -23,7 +26,7 @@ BNS_ERR_CODE bns::TcpServerChannel::async_one_accept()
         {
             if (error)
             {
-                PRINTFLOG("async accept error what %s", error.message().c_str());
+                PRINTFLOG(BL_DEBUG,"async accept error what %s", error.message().c_str());
 
                 EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_ACCEPT, BNS_ERR_CODE::BNS_ACCEPT_FAIL);
                 return ;
@@ -34,6 +37,9 @@ BNS_ERR_CODE bns::TcpServerChannel::async_one_accept()
                 {
                     //协议栈异步处理连接
                     cli->active();
+                    PRINTFLOG(BL_DEBUG, "%I64d accept a clent[%I64d] "\
+                        , handle_,cli->get_handle());
+
                     accept_cb_(cli);
                     std::shared_ptr<BNS_HANDLE> h = std::make_shared<BNS_HANDLE>(cli->get_handle());
                     EVENT_CB(BNS_NET_EVENT_TYPE::BNS_ACCEPT,\
@@ -41,6 +47,8 @@ BNS_ERR_CODE bns::TcpServerChannel::async_one_accept()
                 }
                 else
                 {
+                    PRINTFLOG(BL_ERROR, "%I64d accept clent error,client is not open "\
+                        , handle_);
                     //LOG_INFO << "获得连接：套接字错误 ";
                     //协议栈异步处理连接
                     EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_ACCEPT, \
@@ -71,64 +79,83 @@ bns::TcpServerChannel::~TcpServerChannel()
 BNS_ERR_CODE bns::TcpServerChannel::init(const BnsPoint& local)
 {
     if (!accept_cb_)
+    {
+        PRINTFLOG(BL_ERROR, "ERROR,accept_cb_ is empty");
         return BNS_ERR_CODE::BNS_EMPYTY_ACCEPT_CB;
+    }
 
     if (false == check_endpoint(local))
     {
-        PRINTFLOG("ERROR,POINT[%s:%d]", local.ip.c_str(), local.port);
+        PRINTFLOG(BL_ERROR,"ERROR,POINT[%s:%d]", local.ip.c_str(), local.port);
         return BNS_ERR_CODE::BNS_ADDRESS_ENDPOINT_ERROR;
     }
-
-    boost::asio::ip::tcp::endpoint endpoint(ip::make_address(local.ip), local.port);
-
     boost::system::error_code ec;
+    boost::asio::ip::tcp::endpoint endpoint;
+
+    try
+    {
+        boost::asio::ip::tcp::resolver resolver(service_);
+        endpoint = *resolver.resolve(local.ip, std::to_string(local.port)).begin();
+    }
+    catch (const std::exception&e)
+    {
+        PRINTFLOG(BL_ERROR, "resolver error message=%s", e.what());
+        return BNS_ERR_CODE::BNS_ADDRESS_ENDPOINT_ERROR;
+    }
+    
+    //boost::asio::ip::tcp::endpoint endpoint(ip::make_address(local.ip), local.port);
+    
     //打开连接
     acceptor_.open(endpoint.protocol(), ec);
     if (ec)
     {
-        printf("%s\n", ec.message().c_str());
+        //printf("%s\n", ec.message().c_str());
         //LOG_ERR << "open error " << ec.value() << ec.message();
-        PRINTFLOG("acceptor open error local %s:%d what %s",\
+        PRINTFLOG(BL_ERROR,"acceptor open error local %s:%d what %s",\
             local.ip.c_str(), local.port,ec.message().c_str());
         return BNS_ERR_CODE::BNS_SOCKET_OPEN_FAIL;
     }
+    PRINTFLOG(BL_INFO, "acceptor is opened");
     //设置参数，地址可重用
     acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
     if (ec)
     {
-        PRINTFLOG("set_option reuse address error local %s:%d what %s", local.ip.c_str(),\
+        PRINTFLOG(BL_ERROR,"set_option reuse address error local %s:%d what %s", local.ip.c_str(),\
             local.port,ec.message().c_str());
         return BNS_ERR_CODE::BNS_SET_REUSE_ADDRESS_FAIL;
     }
+    PRINTFLOG(BL_INFO, "acceptor is set reuse_address");
     //绑定地址
     acceptor_.bind(endpoint, ec);
     if (ec)
     {
-        PRINTFLOG("bind error local %s:%d what %s", local.ip.c_str(), \
+        PRINTFLOG(BL_ERROR,"bind error local %s:%d what %s", local.ip.c_str(), \
             local.port, ec.message().c_str());
         return BNS_ERR_CODE::BNS_BIND_ADDRESS_FAIL;
     }
-
+    PRINTFLOG(BL_INFO, "acceptor is bind local %s:%d", local.ip.c_str(), \
+        local.port);
     //监听
     acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
     if (ec)
     {
-        PRINTFLOG("listen error local %s:%d what %s", local.ip.c_str(), \
+        PRINTFLOG(BL_ERROR,"listen error local %s:%d what %s", local.ip.c_str(), \
             local.port, ec.message().c_str());
         return BNS_ERR_CODE::BNS_LISTEN_FAIL;
     }
-    
+    PRINTFLOG(BL_INFO, "acceptor is listen");
     return BNS_ERR_CODE::BNS_OK;
 }
 
 BNS_ERR_CODE bns::TcpServerChannel::active(const BnsPoint& remote)
 {
+    PRINTFLOG(BL_INFO, "[%I64d] start async_one_accept thread num=%d", handle_, accept_num_);
     for (auto i = 0; i < accept_num_; ++i)
     {
         auto ret = async_one_accept();
         if (BNS_ERR_CODE::BNS_OK != ret)
         {
-            PRINTFLOG("start async_one_accept error,[%I64d]", handle_);
+            PRINTFLOG(BL_ERROR,"start async_one_accept error,[%I64d]", handle_);
             return ret;
         }
     }
@@ -148,11 +175,11 @@ BNS_ERR_CODE bns::TcpServerChannel::close()
         }
         catch (std::exception & e)
         {
-            PRINTFLOG("exception:%s", e.what());
+            PRINTFLOG(BL_ERROR,"exception:%s", e.what());
             EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_CLOSED, BNS_ERR_CODE::BNS_NUKNOW_ERROR);
             return BNS_ERR_CODE::BNS_NUKNOW_ERROR;
         }
-        
+        PRINTFLOG(BL_INFO, "[%I64d] TcpServerChannel is closed", handle_);
         EVENT_OK_CB(BNS_NET_EVENT_TYPE::BNS_CLOSED);
         return BNS_ERR_CODE::BNS_OK;
     }

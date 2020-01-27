@@ -8,8 +8,9 @@
 #include <mutex>
 
 #define PRINTF_BUFF_SIZE 2048
+static std::mutex PRINTFLOG_LOCK;
 //日志打印
-#define PRINTFLOG(fmt,...) do\
+#define PRINTFLOG(l,fmt,...) do\
 {\
     char message[PRINTF_BUFF_SIZE] = { 0 };\
     char dst[PRINTF_BUFF_SIZE]={0};\
@@ -26,8 +27,9 @@
     time_str, \
     file_name.c_str(), \
     __LINE__, message);\
+    std::lock_guard<std::mutex> lk(PRINTFLOG_LOCK);\
     if (log_cb_)\
-        log_cb_(dst);\
+        log_cb_(l,dst);\
 }while(false)\
 
 #define MAKE_SHARED(x) make_shared_?make_shared_(x):nullptr
@@ -60,9 +62,11 @@ namespace bns
     {
         return std::shared_ptr<char>(new char[memory_size] {0}, std::default_delete<char[]>());
     }
-    static void default_log_print(const std::string& log_message)
+    static std::string g_log_tag[4] = { "DEBUG","INFO","WRAN","ERROR" };
+    static void default_log_print(BLOG_LEVEL lv,const std::string& log_message)
     {
-        printf(log_message.c_str());
+        auto str = g_log_tag[lv] +":"+ log_message;
+        printf(str.c_str());
     }
     //句柄生成
     static BNS_HANDLE  g_handle = INVAILD_HANDLE;

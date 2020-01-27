@@ -91,6 +91,8 @@ enum class BNS_ERR_CODE
     BNS_CHANNEL_INIT_FAIL,
     //无效的参数输入
     BNS_PARAMS_IS_INVALID,
+    //服务已停止
+    BNS_SERVICE_IS_STOPED,
     //未知错误
     BNS_NUKNOW_ERROR=-9999,
     
@@ -143,8 +145,16 @@ typedef std::function<void(BNS_HANDLE handle,\
     BNS_NET_EVENT_TYPE type, BNS_ERR_CODE error_code,\
     std::shared_ptr<void> buff,size_t buff_len)> BNS_EVENT_CB;
 
+/*日志级别*/
+enum BLOG_LEVEL
+{
+    BL_DEBUG,
+    BL_INFO,
+    BL_WRAN,
+    BL_ERROR,
+};
 //日志回调
-typedef std::function<void(const std::string &log_message)> BNS_LOG_CB;
+typedef std::function<void(BLOG_LEVEL lv,const std::string &log_message)> BNS_LOG_CB;
 
 //内存申请回调
 typedef std::function<std::shared_ptr<char> (size_t memory_size)> BNS_MAKE_SHARED_CB;

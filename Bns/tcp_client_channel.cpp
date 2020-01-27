@@ -12,8 +12,11 @@ bns::TcpClientChannel::~TcpClientChannel()
 
 BNS_ERR_CODE bns::TcpClientChannel::init(const BnsPoint& local)
 {
-    if(INVAILD_HANDLE ==  handle_)
+    if (INVAILD_HANDLE == handle_)
+    {
+        PRINTFLOG(BL_ERROR, "invaild handle");
         return BNS_ERR_CODE::BNS_INVAILD_HANDLE;
+    }
     return BNS_ERR_CODE::BNS_OK;
 }
 
@@ -22,28 +25,34 @@ BNS_ERR_CODE bns::TcpClientChannel::active(const BnsPoint& remote)
 {
     if (false == check_endpoint(remote))
     {
-        PRINTFLOG("ERROR,POINT[%s:%d]", remote.ip.c_str(), remote.port);
+        PRINTFLOG(BL_ERROR,"ERROR,POINT[%s:%d]", remote.ip.c_str(), remote.port);
         return BNS_ERR_CODE::BNS_ADDRESS_ENDPOINT_ERROR;
     }
 
     ip::tcp::endpoint remote_point(ip::address::from_string(remote.ip), remote.port);
 
     auto self = shared_from_this();
-    auto con_handle = [this,self](boost::system::error_code ec)
+    auto con_handle = [this,self,remote](boost::system::error_code ec)
     {
         if (ec)
         {
-            PRINTFLOG("async_connect error what()=%s", ec.message().c_str());
+            //减少打印
+            PRINTFLOG(BL_DEBUG,"async_connect error what()=%s", ec.message().c_str());
+            //上层关闭
             EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_CONNECT_ESTABLISH, BNS_ERR_CODE::BNS_CONNECT_FAIL);
-            close();
+            //close();
             return;
         }
         bconn_ = true;
+        PRINTFLOG(BL_DEBUG, "tcp client[%I64d] is connected remote[%s:%d]", \
+            get_handle(), remote.ip.c_str(), remote.port);
         EVENT_OK_CB(BNS_NET_EVENT_TYPE::BNS_CONNECT_ESTABLISH);
         //接收数据
         async_recv();
     };
     socket_.async_connect(remote_point, con_handle);
+    PRINTFLOG(BL_DEBUG, "tcp client[%I64d] begin connect to remote[%s:%d]", \
+        get_handle(), remote.ip.c_str(), remote.port);
     return BNS_ERR_CODE::BNS_OK;
 }
 
@@ -64,12 +73,13 @@ BNS_ERR_CODE bns::TcpClientChannel::close()
         }
         catch (std::exception & e)
         {
-            PRINTFLOG("exception:%s",e.what());
+            PRINTFLOG(BL_ERROR,"exception:%s",e.what());
             EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_CLOSED, BNS_ERR_CODE::BNS_NUKNOW_ERROR);
             return BNS_ERR_CODE::BNS_NUKNOW_ERROR;
         }
         socket_.close();
         bconn_ = false;
+        PRINTFLOG(BL_DEBUG, "TcpClientChannel[%I64d] closed ", handle_);
         EVENT_OK_CB(BNS_NET_EVENT_TYPE::BNS_CLOSED);
         return BNS_ERR_CODE::BNS_OK;
     }
@@ -114,9 +124,9 @@ BNS_ERR_CODE bns::TcpClientChannel::async_send(std::shared_ptr<void> buff,\
 
         if (ec)
         {
-            PRINTFLOG("async_send error what()=%s", ec.message().c_str());
+            PRINTFLOG(BL_DEBUG,"async_send error what()=%s", ec.message().c_str());
             EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_SEND_COMPLETE, BNS_ERR_CODE::BNS_SEND_DATA_FAIL);
-            close();
+            //close();
             return;
         }
         //写完了
@@ -131,6 +141,7 @@ BNS_ERR_CODE bns::TcpClientChannel::async_send(std::shared_ptr<void> buff,\
         //未写完
         //计算剩下的字节
         int now_len = buff_len - s;
+        PRINTFLOG(BL_DEBUG, "async_send  %p:len[%d]", buff.get(), s);
         //继续写
         async_send(buff, now_len, beg + s);
         return;
@@ -145,6 +156,7 @@ BNS_ERR_CODE bns::TcpClientChannel::async_recv(std::shared_ptr<void> buff, size_
 {
     if (false == bconn_)
     {
+        PRINTFLOG(BL_ERROR, "TcpClientChannel[%I64d] is not connected ", handle_);
         EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_RECV_DATA, BNS_ERR_CODE::BNS_CHANNEL_NOT_CONN);
         return BNS_ERR_CODE::BNS_CHANNEL_NOT_CONN;
     }
@@ -155,9 +167,9 @@ BNS_ERR_CODE bns::TcpClientChannel::async_recv(std::shared_ptr<void> buff, size_
         buff = MAKE_SHARED(recv_buff_size_);
         if (nullptr == buff)
         {
-            PRINTFLOG("get cache error ch :%I64d", handle_);
+            PRINTFLOG(BL_ERROR,"get cache error ch :%I64d", handle_);
             EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_RECV_DATA, BNS_ERR_CODE::BNS_ALLOC_FAIL);
-            close();
+            //close();
             return BNS_ERR_CODE::BNS_ALLOC_FAIL;
         }
 
@@ -169,11 +181,12 @@ BNS_ERR_CODE bns::TcpClientChannel::async_recv(std::shared_ptr<void> buff, size_
         if (ec)
         {
             //
-            PRINTFLOG("async_read error what()=%s", ec.message().c_str());
+            PRINTFLOG(BL_DEBUG,"async_read error what()=%s", ec.message().c_str());
             EVENT_ERR_CB(BNS_NET_EVENT_TYPE::BNS_RECV_DATA, BNS_ERR_CODE::BNS_RECV_DATA_FAIL);
-            close();
+            //close();
             return;
         }
+        PRINTFLOG(BL_DEBUG, "async_read  %p:len[%d]", buff.get(), recv_len);
         EVENT_RECV_OK_CB(buff, recv_len);
         //重复接收数据
         async_recv(buff, buff_len);

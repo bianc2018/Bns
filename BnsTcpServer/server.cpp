@@ -25,31 +25,7 @@ void server_event(BNS_HANDLE handle,
     {
         std::string str((char*)buff.get(), buff_len);
         printf("server BNS_RECV_DATA[%I64d] %d %s\n", (std::int64_t)handle, buff_len,str.c_str());
-        BNS_Send_String(handle, str+"\n");
-    }
-}
-
-void client_event(BNS_HANDLE handle,
-    BNS_NET_EVENT_TYPE type, BNS_ERR_CODE error_code, \
-    std::shared_ptr<void> buff, size_t buff_len)
-{
-    if (BNS_ERR_CODE::BNS_OK != error_code)
-    {
-        printf("´íÎóµÄ·¢Éú:[%I64d] opt=%d,err=%d", handle, type, error_code);
-        return;
-    }
-   
-    if (BNS_NET_EVENT_TYPE::BNS_CONNECT_ESTABLISH == type)
-    {
-        printf("connect...\n");
-        BNS_Send_String(handle, "hello world");
-    }
-    else if (BNS_NET_EVENT_TYPE::BNS_RECV_DATA == type)
-    {
-        std::string str((char*)buff.get(), buff_len);
-        printf("client BNS_RECV_DATA[%I64d] %d %s\n", (std::int64_t)handle, buff_len, str.c_str());
-        //BNS_Send_String(handle, str + "\n");
-        BNS_Close(handle);
+        BNS_Send_String(handle, str);
     }
 }
 
@@ -62,16 +38,6 @@ int main()
     ret = BNS_SetEvntCB(serv_handle, server_event);
     ret = BNS_Connect(serv_handle, BNS_INVALID_POINT);
 
-    for (int i = 0; i < 10; ++i)
-    {
-        BnsPoint dst = { "192.168.1.100",2020 };
-        BNS_HANDLE cli_handle;
-        auto ret = BNS_Add_Channnel(BNS_CHANNEL_TYPE::TCP_CLIENT, BNS_INVALID_POINT, \
-            cli_handle);
-        ret = BNS_SetEvntCB(cli_handle, client_event);
-        ret = BNS_Connect(cli_handle, dst);
-        //BNS_Send_String(cli_handle, "hello server");
-    }
     system("pause");
 
     BNS_DInit();

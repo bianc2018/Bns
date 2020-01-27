@@ -74,7 +74,7 @@ namespace bns
         void run_worker();
 
         //打印日志
-        void printf_log(const std::string & message);
+        void printf_log(BLOG_LEVEL lv,const std::string & message);
 
         //申请缓冲区
         std::shared_ptr<char> get_cache(size_t size);

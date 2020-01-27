@@ -28,12 +28,13 @@ BNS_ERR_CODE bns::BnsService::BNS_Init(int thread_num)
     {
         thread_num_ = thread_num;
     }
-
+    PRINTFLOG(BL_DEBUG, "BnsService init thread_num=%d", thread_num_);
     for (size_t i = 0; i < thread_num_; ++i)
     {
+        PRINTFLOG(BL_DEBUG, "BnsService  run_worker %d", i);
         thread_vec_.push_back(std::thread(&BnsService::run_worker, this));
     }
-
+    PRINTFLOG(BL_DEBUG, "BnsService init ok");
     return BNS_ERR_CODE::BNS_OK;
 }
 
@@ -45,61 +46,93 @@ BNS_ERR_CODE bns::BnsService::BNS_DInit()
         run_flag_ = false;
         
         //删除释放所有的设备
-        std::lock_guard<std::mutex> lk(bns_channel_map_lock_);
-        for (auto p = bns_channel_map_.begin(); p != bns_channel_map_.end();)
         {
-            auto  ch = p->second;
-            if (ch)
+            std::lock_guard<std::mutex> lk(bns_channel_map_lock_);
+            PRINTFLOG(BL_DEBUG, "BnsService release all channel size=%d", bns_channel_map_.size());
+            for (auto p = bns_channel_map_.begin(); p != bns_channel_map_.end();)
             {
-                ch->close();
+                auto  ch = p->second;
+                if (ch)
+                {
+                    PRINTFLOG(BL_DEBUG, "BnsService close channel[%I64d]", p->first);
+                    ch->close();
+                }
+                else
+                {
+                    PRINTFLOG(BL_WRAN, "BnsService close channel[%I64d] is nullptr");
+                }
+
+                p = bns_channel_map_.erase(p);
             }
-        
-            p = bns_channel_map_.erase(p);
         }
         //重置
         service_.stop();
         service_.reset();
+        
+        PRINTFLOG(BL_DEBUG, "BnsService asio service is stoped");
+
         //释放
         work_.~work();
+        PRINTFLOG(BL_DEBUG, "BnsService asio work is release");
+
         for (auto& t : thread_vec_)
         {
             if (t.joinable())
                 t.join();
         }
+        PRINTFLOG(BL_DEBUG, "all work thread is join !");
     }
+    PRINTFLOG(BL_DEBUG, "BnsService is release !");
     return BNS_ERR_CODE::BNS_OK;
 }
 
-BNS_ERR_CODE bns::BnsService::BNS_Add_Channnel(BNS_CHANNEL_TYPE type, const BnsPoint& local, BNS_HANDLE& handle)
+BNS_ERR_CODE bns::BnsService::BNS_Add_Channnel(BNS_CHANNEL_TYPE type, \
+    const BnsPoint& local, BNS_HANDLE& handle)
 {
+    PRINTFLOG(BL_INFO, "add a channel type=%d local=%s:%d",type,local.ip.c_str(),local.port);
     //创建套接字
     std::shared_ptr<Channel>ch = nullptr;
     if (BNS_CHANNEL_TYPE::TCP_CLIENT == type)
     {
         ch = std::make_shared<TcpClientChannel>(service_);
+        if(ch)
+            PRINTFLOG(BL_DEBUG, "new a TcpClientChannel handle[%I64d]", ch->get_handle());
     }
     else if (BNS_CHANNEL_TYPE::TCP_SERVER == type)
     {
         ch = std::make_shared<TcpServerChannel>(service_,\
             std::bind(&BnsService::add_channnel,this,std::placeholders::_1));
+        if(ch)
+            PRINTFLOG(BL_DEBUG, "new a TcpServerChannel handle[%I64d]", ch->get_handle());
     }
     else
     {
+        PRINTFLOG(BL_ERROR, "no support type=%d", type);
         return BNS_ERR_CODE::BNS_NO_SUPPORT;
     }
     
     if (nullptr == ch)
+    {
+        PRINTFLOG(BL_ERROR, "channel cannt create  type=%d", type);
         return BNS_ERR_CODE::BNS_CHANNEL_CREATE_FAIL;
+    }
     
-    ch->set_log_cb(std::bind(&BnsService::printf_log, this, std::placeholders::_1));
+    PRINTFLOG(BL_DEBUG, "channel init ");
+
+    ch->set_log_cb(std::bind(&BnsService::printf_log, \
+        this, std::placeholders::_1, std::placeholders::_2));
     ch->set_shared_cb(std::bind(&BnsService::get_cache, this, std::placeholders::_1));
 
     auto err = ch->init(local);
     
     if (BNS_ERR_CODE::BNS_OK != err)
+    {
+        PRINTFLOG(BL_ERROR, "channel[%I64d] init fail ret=%d",ch->get_handle(), err);
         return err;
+    }
 
     handle = ch->get_handle();
+    PRINTFLOG(BL_DEBUG, "try add channel[%I64d] ",handle);
     return add_channnel(ch);
 }
 
@@ -108,8 +141,12 @@ BNS_ERR_CODE bns::BnsService::BNS_Connect(BNS_HANDLE handle, const BnsPoint& rem
     auto ch = get_channel(handle);
     if (ch)
     {
+        PRINTFLOG(BL_INFO, "active channel handle=%I64d remote=%s:%d", \
+            handle, remote.ip.c_str(), remote.port);
         return ch->active(remote);
     }
+    PRINTFLOG(BL_ERROR, "channel handle=%I64d not find,this handle is invaild", \
+        handle);
     return BNS_ERR_CODE::BNS_INVAILD_HANDLE;
 }
 
@@ -118,10 +155,14 @@ BNS_ERR_CODE bns::BnsService::BNS_Close(BNS_HANDLE handle)
     auto ch = get_channel(handle);
     if (nullptr == ch)
     {
-        PRINTFLOG("ch[%lld] is no exist!", handle);
+        PRINTFLOG(BL_ERROR,"ch[%lld] is no exist!", handle);
         return BNS_ERR_CODE::BNS_INVAILD_HANDLE;
     }
-
+    {
+        std::lock_guard<std::mutex> lk(bns_channel_map_lock_);
+        bns_channel_map_.erase(handle);
+    }
+    PRINTFLOG(BL_INFO, "close channel handle=%I64d",handle);
     return ch->close();
 }
 
@@ -131,20 +172,27 @@ BNS_ERR_CODE bns::BnsService::BNS_Send(BNS_HANDLE handle,\
     auto ch = get_channel(handle);
     if (nullptr == ch)
     {
-        PRINTFLOG("ch[%ll] is no exist!", handle);
+        PRINTFLOG(BL_ERROR, "ch[%lld] is no exist!", handle);
         return BNS_ERR_CODE::BNS_INVAILD_HANDLE;
     }
+    PRINTFLOG(BL_INFO, "channel[%I64d] send data size:%u",handle, message_size);
     return ch->send(message, message_size);
 }
 
 BNS_ERR_CODE bns::BnsService::BNS_Send_String(BNS_HANDLE handle, const std::string& message)
 {
     if (message.empty())
+    {
+        PRINTFLOG(BL_WRAN, "channel[%I64d] send empty message", handle);
         return BNS_ERR_CODE::BNS_OK;
+    }
     auto message_size = message.size();
     auto cache = get_cache(message_size);
     if (nullptr == cache)
+    {
+        PRINTFLOG(BL_ERROR, "channel[%I64d] get_cache error,size=%d", handle,message_size);
         return BNS_ERR_CODE::BNS_ALLOC_FAIL;
+    }
     memcpy(cache.get(), message.c_str(), message_size);
     return BNS_Send(handle, cache, message_size);
 }
@@ -154,20 +202,42 @@ BNS_ERR_CODE bns::BnsService::BNS_SetEvntCB(BNS_HANDLE handle, BNS_EVENT_CB cb)
     auto ch = get_channel(handle);
     if (nullptr == ch)
     {
-        PRINTFLOG("ch[%I64d] is no exist!", handle);
+        PRINTFLOG(BL_ERROR,"ch[%I64d] is no exist!", handle);
         return BNS_ERR_CODE::BNS_INVAILD_HANDLE;
     }
-    return ch->set_event_cb(cb);
+    //注册信息
+    return ch->set_event_cb([this,cb](BNS_HANDLE handle, \
+        BNS_NET_EVENT_TYPE type, BNS_ERR_CODE error_code, \
+        std::shared_ptr<void> buff, size_t buff_len) 
+        {
+            //发生错误就关闭
+            if (BNS_ERR_CODE::BNS_OK != error_code &&
+                BNS_NET_EVENT_TYPE::BNS_CLOSED != type)
+            {
+                PRINTFLOG(BL_ERROR, "event_cb ch[%I64d] error,opt=%d,error=%d try to close!"\
+                    , handle,type,error_code);
+                BNS_Close(handle);
+            }
+
+            //可以统计用
+
+            //真正调用函数
+            if (cb)
+                cb(handle, type, error_code, buff, buff_len);
+        });
 }
 
 BNS_ERR_CODE bns::BnsService::BNS_SetLogCB(BNS_LOG_CB cb)
 {
-    if (cb)
+    log_cb_ = cb;
+    return BNS_ERR_CODE::BNS_OK;
+   /* if (cb)
     {
         log_cb_ = cb;
         return BNS_ERR_CODE::BNS_OK;
     }
-    return BNS_ERR_CODE::BNS_EMPYTY_LOG_CB;
+    PRINTFLOG(BL_ERROR, "log_cb_ dont set,log_cb_ is empty!");
+    return BNS_ERR_CODE::BNS_EMPYTY_LOG_CB;*/
 }
 
 BNS_ERR_CODE bns::BnsService::BNS_SetMakeSharedCB( BNS_MAKE_SHARED_CB cb)
@@ -177,6 +247,7 @@ BNS_ERR_CODE bns::BnsService::BNS_SetMakeSharedCB( BNS_MAKE_SHARED_CB cb)
         make_shared_ = cb;
         return BNS_ERR_CODE::BNS_OK;
     }
+    PRINTFLOG(BL_ERROR, "make_shared_ dont set,make_shared_ is empty!");
     return BNS_ERR_CODE::BNS_EMPYTY_MAKE_SHARED_CB;
 }
 
@@ -342,13 +413,15 @@ std::shared_ptr<Channel> bns::BnsService::get_channel(BNS_HANDLE handle)
 
 void bns::BnsService::run_worker()
 {
+    PRINTFLOG(BL_DEBUG, "run_worker is start!");
     service_.run();
+    PRINTFLOG(BL_DEBUG, "run_worker is end!");
 }
 
-void bns::BnsService::printf_log(const std::string& message)
+void bns::BnsService::printf_log(BLOG_LEVEL lv, const std::string& message)
 {
     if (log_cb_)
-        log_cb_(message);
+        log_cb_(lv,message);
 }
 
 std::shared_ptr<char> bns::BnsService::get_cache(size_t size)
@@ -365,8 +438,14 @@ size_t bns::BnsService::get_default_thread_num()
 
 BNS_ERR_CODE bns::BnsService::add_channnel(std::shared_ptr<Channel> ch)
 {
+    if (false == run_flag_)
+    {
+        PRINTFLOG(BL_ERROR, "channel[%I64d] is cannt add, service is exit", ch->get_handle());
+        return BNS_ERR_CODE::BNS_SERVICE_IS_STOPED;
+    }
     std::lock_guard<std::mutex> lk(bns_channel_map_lock_);
     bns_channel_map_[ch->get_handle()] = ch;
+    PRINTFLOG(BL_DEBUG, "channel[%I64d] is added", ch->get_handle());
     return BNS_ERR_CODE::BNS_OK;
 }
 
