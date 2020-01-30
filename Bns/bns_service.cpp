@@ -5,6 +5,7 @@
 
 #include "tcp_client_channel.h"
 #include "tcp_server_channel.h"
+#include "udp_channel.h"
 
 using namespace bns;
 
@@ -104,6 +105,12 @@ BNS_ERR_CODE bns::BnsService::BNS_Add_Channnel(BNS_CHANNEL_TYPE type, \
             std::bind(&BnsService::add_channnel,this,std::placeholders::_1));
         if(ch)
             PRINTFLOG(BL_DEBUG, "new a TcpServerChannel handle[%I64d]", ch->get_handle());
+    }
+    else if (BNS_CHANNEL_TYPE::UDP == type)
+    {
+        ch = std::make_shared<UdpChannel>(service_);
+        if (ch)
+            PRINTFLOG(BL_DEBUG, "new a UdpChannel handle[%I64d]", ch->get_handle());
     }
     else
     {

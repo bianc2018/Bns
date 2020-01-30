@@ -33,6 +33,9 @@
     <ClInclude Include="bns_define.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="udp_channel.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bns_service.cpp">
@@ -48,6 +51,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="tcp_server_channel.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="udp_channel.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

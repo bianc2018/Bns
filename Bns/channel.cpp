@@ -1,7 +1,7 @@
 #include "channel.h"
 #include "bns_define.h"
 bns::Channel::Channel(io_service& service)\
-    :handle_(generate_handle()), service_(service), recv_buff_size_(4*1024)
+    :handle_(generate_handle()), service_(service), recv_buff_size_(10*1024)
 {
 
 }

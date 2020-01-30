@@ -15,6 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BnsTcpClient", "BnsTcpClien
 		{461CB61D-C946-44E1-A76B-FF14BC1AE8FE} = {461CB61D-C946-44E1-A76B-FF14BC1AE8FE}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BnsUdpService", "BnsUdpService\BnsUdpService.vcxproj", "{6C88C502-5D17-4D60-A0D1-B2D027A352DD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{461CB61D-C946-44E1-A76B-FF14BC1AE8FE} = {461CB61D-C946-44E1-A76B-FF14BC1AE8FE}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		De|x64 = De|x64
@@ -75,6 +80,22 @@ Global
 		{35D43308-2650-4067-87D0-7E8126A1B2D2}.static|x64.Build.0 = Release|x64
 		{35D43308-2650-4067-87D0-7E8126A1B2D2}.static|x86.ActiveCfg = Release|Win32
 		{35D43308-2650-4067-87D0-7E8126A1B2D2}.static|x86.Build.0 = Release|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.De|x64.ActiveCfg = Debug|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.De|x64.Build.0 = Debug|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.De|x86.ActiveCfg = Debug|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.De|x86.Build.0 = Debug|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Debug|x64.ActiveCfg = Debug|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Debug|x64.Build.0 = Debug|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Debug|x86.ActiveCfg = Debug|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Debug|x86.Build.0 = Debug|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Release|x64.ActiveCfg = Release|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Release|x64.Build.0 = Release|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Release|x86.ActiveCfg = Release|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.Release|x86.Build.0 = Release|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.static|x64.ActiveCfg = Release|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.static|x64.Build.0 = Release|x64
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.static|x86.ActiveCfg = Release|Win32
+		{6C88C502-5D17-4D60-A0D1-B2D027A352DD}.static|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
