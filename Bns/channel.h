@@ -12,6 +12,7 @@
 namespace bns
 {
     using namespace boost::asio;
+    typedef boost::asio::io_service io_service;
     class Channel :public std::enable_shared_from_this<Channel>
     {
     public:

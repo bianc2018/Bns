@@ -60,7 +60,7 @@ BNS_ERR_CODE bns::BnsService::BNS_DInit()
                 }
                 else
                 {
-                    PRINTFLOG(BL_WRAN, "BnsService close channel[%I64d] is nullptr");
+                    PRINTFLOG(BL_WRAN, "BnsService close channel[%I64d] is nullptr",p->first);
                 }
 
                 p = bns_channel_map_.erase(p);
