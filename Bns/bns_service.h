@@ -35,7 +35,7 @@ namespace bns
             BNS_HANDLE& handle);
 
         ////建立链接
-        BNS_ERR_CODE BNS_Connect(BNS_HANDLE handle,
+        BNS_ERR_CODE BNS_Active(BNS_HANDLE handle,
             const BnsPoint& remoter);
 
         //关闭一个通道
@@ -97,7 +97,7 @@ namespace bns
 
         //运行线程
         std::atomic_bool run_flag_;
-        size_t thread_num_;
+        int thread_num_;
         std::vector<std::thread> thread_vec_;
 
         //回调函数

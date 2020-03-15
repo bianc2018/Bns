@@ -19,9 +19,9 @@ EXPORT_SYMBOLS BNS_ERR_CODE BNS_Add_Channnel(BNS_CHANNEL_TYPE type,\
     return gService.BNS_Add_Channnel(type,local, handle);
 }
 
-EXPORT_SYMBOLS BNS_ERR_CODE BNS_Connect(BNS_HANDLE handle, const BnsPoint& remote)
+EXPORT_SYMBOLS BNS_ERR_CODE BNS_Active(BNS_HANDLE handle, const BnsPoint& remote)
 {
-    return gService.BNS_Connect(handle, remote);
+    return gService.BNS_Active(handle, remote);
 }
 
 EXPORT_SYMBOLS BNS_ERR_CODE BNS_Close(BNS_HANDLE handle)

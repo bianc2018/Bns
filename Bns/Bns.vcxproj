@@ -249,6 +249,7 @@
     <ClInclude Include="bns_define.h" />
     <ClInclude Include="bns_service.h" />
     <ClInclude Include="channel.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="tcp_client_channel.h" />
     <ClInclude Include="tcp_server_channel.h" />
     <ClInclude Include="udp_channel.h" />
@@ -260,6 +261,9 @@
     <ClCompile Include="tcp_client_channel.cpp" />
     <ClCompile Include="tcp_server_channel.cpp" />
     <ClCompile Include="udp_channel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

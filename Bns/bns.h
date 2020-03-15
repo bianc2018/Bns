@@ -170,7 +170,7 @@ EXPORT_SYMBOLS BNS_ERR_CODE BNS_Add_Channnel(BNS_CHANNEL_TYPE type\
     , const BnsPoint& local,BNS_HANDLE& handle);
 
 //建立链接
-EXPORT_SYMBOLS BNS_ERR_CODE BNS_Connect(BNS_HANDLE handle,const BnsPoint& remote);
+EXPORT_SYMBOLS BNS_ERR_CODE BNS_Active(BNS_HANDLE handle,const BnsPoint& remote);
 
 
 //关闭一个通道

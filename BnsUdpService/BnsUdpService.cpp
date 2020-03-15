@@ -11,7 +11,7 @@ void add(BNS_EVENT_CB cb)
     auto ret = BNS_Add_Channnel(BNS_CHANNEL_TYPE::UDP, src, \
         cli_handle);
     ret = BNS_SetEvntCB(cli_handle, cb);
-    ret = BNS_Connect(cli_handle, dst);
+    ret = BNS_Active(cli_handle, dst);
 }
 
 //事件回调

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="version">
+      <UniqueIdentifier>{19efb5c3-cb84-4a26-840e-5044522efe57}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bns.h">
@@ -36,6 +39,9 @@
     <ClInclude Include="udp_channel.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bns_service.cpp">
@@ -56,5 +62,10 @@
     <ClCompile Include="udp_channel.cpp">
       <Filter>src</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc">
+      <Filter>version</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

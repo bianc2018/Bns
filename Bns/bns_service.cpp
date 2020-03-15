@@ -143,7 +143,7 @@ BNS_ERR_CODE bns::BnsService::BNS_Add_Channnel(BNS_CHANNEL_TYPE type, \
     return add_channnel(ch);
 }
 
-BNS_ERR_CODE bns::BnsService::BNS_Connect(BNS_HANDLE handle, const BnsPoint& remote)
+BNS_ERR_CODE bns::BnsService::BNS_Active(BNS_HANDLE handle, const BnsPoint& remote)
 {
     auto ch = get_channel(handle);
     if (ch)
